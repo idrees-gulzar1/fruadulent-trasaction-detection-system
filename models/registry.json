@@ -1,0 +1,9 @@
+[
+  {
+    "name":"random_forest_20260325_155951",
+    "path":"models\/random_forest_20260325_155951.pkl",
+    "accuracy":0.47311,
+    "timestamp":"20260325_155951",
+    "size":608600
+  }
+]

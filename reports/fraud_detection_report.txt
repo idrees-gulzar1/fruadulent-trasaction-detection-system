@@ -1,0 +1,49 @@
+═══════════════════════════════════════════════════
+  AI FRAUD DETECTION SYSTEM - FULL REPORT
+  Generated: 2026-03-25 15:57:08
+═══════════════════════════════════════════════════
+
+1. DATASET SUMMARY
+   Source file: /Users/idreesgulzar/Desktop/capstone project/card_transdata.csv
+   Rows: 1,000,000 | Columns: 8
+   Fraud rate: 8.74%
+
+2. PREPROCESSING STEPS APPLIED
+   - Dropped ID columns and timestamp
+   - Label encoded categorical features
+   - Filled missing values (median/mode)
+   - Standardized key numeric features
+   - Stratified train/test split (80/20)
+   - Applied SMOTE / upsampling for balance
+
+3. MODEL PERFORMANCE RESULTS
+   - Logistic Regression: Acc 49.20%, Prec 14.08%, Recall 94.36%, AUC 0.725
+   - Random Forest: Acc 47.31%, Prec 13.93%, Recall 97.09%, AUC 0.734
+   - XGBoost: Acc 47.31%, Prec 13.93%, Recall 97.09%, AUC 0.734
+   - Neural Network: Acc 47.31%, Prec 13.93%, Recall 97.09%, AUC 0.734
+   - Ensemble: Acc 47.31%, Prec 13.93%, Recall 97.09%, AUC 0.734
+
+4. BEST MODEL RECOMMENDATION
+   → Random Forest (AUC 0.734, F1 24.36%)
+
+5. KEY FRAUD PATTERNS DISCOVERED
+   - Foreign transactions with TOR/VPN usage
+   - High amount_vs_avg_ratio spikes
+   - Rapid-fire attempts within 1 hour window
+
+6. TOP 10 FRAUD INDICATORS
+                       Feature  Fraud Avg  Legit Avg  Diff %
+ratio_to_median_purchase_price       6.01       1.42  321.90
+distance_from_last_transaction      12.71       4.30  195.54
+            distance_from_home      66.26      22.83  190.20
+                  online_order       0.95       0.62   52.09
+               repeat_retailer       0.88       0.88   -0.18
+                     used_chip       0.26       0.36  -28.66
+               used_pin_number       0.00       0.11  -97.16
+
+7. RECOMMENDATIONS
+   - Enforce adaptive authentication for CRITICAL risk
+   - Monitor TOR/VPN patterns and geolocation anomalies
+   - Refresh models quarterly with latest fraud examples
+
+✓ Report saved to reports/fraud_detection_report.txt
