@@ -6,3 +6,4 @@ venv/
 .env
 node_modules/
 .sixth/
+reports/batch_predictions.csv
