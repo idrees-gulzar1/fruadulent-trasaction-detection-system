@@ -1182,8 +1182,10 @@
             const useAPI = apiToggle ? apiToggle.checked : false;
 
             if (useAPI) {
-                // Change this URL once you deploy your backend to Render
-                const API_URL = 'http://localhost:8000/predict'; 
+                // Uses localhost for local dev, and relative /api/predict for production (Vercel)
+                const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+                    ? "http://localhost:8000/predict" 
+                    : "/api/predict"; 
                 
                 try {
                     const response = await fetch(API_URL, {

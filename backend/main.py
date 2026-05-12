@@ -17,7 +17,8 @@ app.add_middleware(
 )
 
 # Load the model
-MODEL_PATH = "backend/fraud_model.pkl"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "fraud_model.pkl")
 if not os.path.exists(MODEL_PATH):
     # This is a fallback in case the user hasn't run the generator yet
     model = None
