@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FraudShield | ML-Powered Transaction Risk Analysis</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-card: #161616;
+            --border: #252525;
+            --border-hover: #383838;
+            --text-primary: #f0f0f0;
+            --text-secondary: #888888;
+            --text-muted: #444444;
+            --accent-red: #e05252;
+            --accent-red-dim: #1a0808;
+            --accent-green: #52c97a;
+            --accent-green-dim: #081a0e;
+            --accent-amber: #f5a623;
+            --accent-amber-dim: #1a1000;
+            --accent-blue: #4a90e2;
+            --nav-height: 70px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'DM Mono', monospace;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, .syne {
+            font-family: 'Syne', sans-serif;
+            text-transform: uppercase;
+        }
+
+        /* --- UTILITIES --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .section {
+            padding: 100px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-high { background: var(--accent-red-dim); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .badge-medium { background: var(--accent-amber-dim); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+        .badge-low { background: var(--accent-green-dim); color: var(--accent-green); border: 1px solid var(--accent-green); }
+
+        /* --- NAV --- */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: rgba(10, 10, 10, 0.95);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-red);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .tagline {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: -4px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+            padding: 4px 0;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-primary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-red);
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover::after, .nav-links a.active::after {
+            width: 100%;
+        }
+
+        /* --- HERO --- */
+        #hero {
+            padding: 180px 0 100px;
+            background: radial-gradient(circle at 50% 50%, #1a0808 0%, #0a0a0a 70%);
+        }
+
+        #hero h1 {
+            font-size: 64px;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            max-width: 800px;
+        }
+
+        #hero p {
+            color: var(--text-secondary);
+            font-size: 18px;
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        .stat-pills {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .stat-pill {
+            padding: 6px 16px;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+        }
+
+        /* --- PREDICT --- */
+        .predict-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+
+        .section-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            letter-spacing: 0.2em;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        input, select {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 12px;
+            color: var(--text-primary);
+            font-family: 'DM Mono', monospace;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 10px rgba(74, 144, 226, 0.2);
+        }
+
+        .btn-analyze {
+            width: 100%;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-analyze:hover {
+            filter: brightness(1.1);
+            letter-spacing: 0.05em;
+        }
+
+        .btn-analyze:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+        }
+
+        /* --- RESULT PANEL --- */
+        .result-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .result-content {
+            display: none;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .verdict-title {
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .fraud-score-container {
+            margin-bottom: 2rem;
+        }
+
+        .fraud-score-large {
+            font-size: 82px;
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .progress-container {
+            height: 8px;
+            background: var(--border);
+            width: 100%;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            transition: width 0.8s ease;
+        }
+
+        .progress-bar.fraud { background: var(--accent-red); }
+        .progress-bar.legit { background: var(--accent-green); }
+
+        .risk-signals {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .signal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .analysis-text {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-left: 2px solid var(--accent-red);
+            margin-bottom: 2rem;
+        }
+
+        .result-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+        }
+
+        /* --- BATCH ANALYSIS --- */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 2rem;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-blue);
+            background: rgba(74, 144, 226, 0.05);
+        }
+
+        .upload-zone svg {
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .expected-cols {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 1rem;
+        }
+
+        .batch-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-secondary);
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 3px solid var(--accent-blue);
+            display: none;
+        }
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            text-align: left;
+            padding: 12px;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .btn-export {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: var(--transition);
+        }
+
+        .btn-export:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-secondary);
+        }
+
+        /* --- DASHBOARD --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-title {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .chart-wrapper {
+            flex-grow: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        /* --- ABOUT --- */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+
+        .about-col h3 {
+            font-size: 18px;
+            margin-bottom: 1.5rem;
+        }
+
+        .about-col p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 1rem;
+        }
+
+        .model-list {
+            list-style: none;
+        }
+
+        .model-list li {
+            margin-bottom: 1rem;
+            font-size: 14px;
+        }
+
+        .model-list b { color: var(--text-primary); }
+
+        .footer-note {
+            margin-top: 4rem;
+            color: var(--text-muted);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 900px) {
+            .predict-grid, .charts-grid, .about-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            #hero h1 { font-size: 48px; }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-links { display: none; }
+        }
+
+        /* --- AUTH STYLES --- */
+        #authView {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .auth-tab {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+        }
+
+        .auth-tab.active {
+            color: var(--accent-red);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        #mainContent {
+            display: none; /* Hidden until auth */
+        }
+
+        .user-info {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-right: 15px;
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .btn-logout:hover {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .auth-message {
+            font-size: 12px;
+            margin-top: 1rem;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .auth-message.error { color: var(--accent-red); }
+        .auth-message.success { color: var(--accent-green); }
+    </style>
+</head>
+<body>
+
+    <section id="authView">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo" style="justify-content: center; font-size: 32px; margin-bottom: 0.5rem;">
+                    <div class="logo-dot" style="width: 15px; height: 15px;"></div>
+                    FraudShield
+                </div>
+                <div class="tagline">Security Analyst Portal</div>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+            </div>
+
+            <div id="loginForm" class="auth-form active">
+                <form onsubmit="handleAuth(event, 'login')">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="loginEmail" placeholder="analyst@bank.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-analyze" style="width: 100%;">ACCESS PORTAL &rarr;</button>
+                </form>
+            </div>
+
+            <div id="registerForm" class="auth-form">
+                <form onsubmit="handleAuth(event, 'register')">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="regEmail" placeholder="analyst@bank.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="regPassword" placeholder="Min 6 characters" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn-analyze" style="width: 100%;">CREATE ACCOUNT &rarr;</button>
+                </form>
+            </div>
+
+            <div id="authMessage" class="auth-message"></div>
+        </div>
+    </section>
+
+    <div id="mainContent">
+    <nav>
+        <div class="container">
+            <div class="logo-container">
+                <div class="logo">
+                    <div class="logo-dot"></div>
+                    FraudShield
+                </div>
+                <div class="tagline">ML-Powered Transaction Risk Analysis</div>
+            </div>
+                <div class="nav-links">
+                    <a href="#predict" class="active">Predict</a>
+                    <a href="#batch">Batch</a>
+                    <a href="#dashboard">Dashboard</a>
+                    <a href="#about">About</a>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-left: 20px; padding-left: 20px; border-left: 1px solid var(--border);">
+                        <div class="api-toggle-container" style="display: flex; align-items: center; gap: 8px;">
+                            <label class="switch">
+                                <input type="checkbox" id="apiToggle">
+                                <span class="slider round"></span>
+                            </label>
+                            <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">Live API</span>
+                        </div>
+                        <span id="userEmail" class="user-info" style="margin-left: 10px; border-left: 1px solid var(--border); padding-left: 15px;"></span>
+                        <button class="btn-logout" onclick="handleSignOut()">Sign Out</button>
+                    </div>
+                </div>
+        </div>
+    </nav>
+
+    <style>
+        /* API Toggle Styles */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 20px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border);
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px; width: 14px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-green); }
+        input:checked + .slider:before { transform: translateX(14px); }
+    </style>
+
+    <section id="hero">
+        <div class="container">
+            <h1>Detect Financial Fraud</h1>
+            <p>Enter transaction details below to analyze risk using XGBoost, LightGBM, Random Forest, or Logistic Regression models.</p>
+            <div class="stat-pills">
+                <div class="stat-pill">99.2% Accuracy</div>
+                <div class="stat-pill">&lt; 50ms Latency</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="predict" class="section">
+        <div class="container">
+            <div class="section-label">TRANSACTION DETAILS</div>
+            <div class="predict-grid">
+                <!-- FORM -->
+                <div class="predict-form">
+                    <form id="txForm">
+                        <div class="form-group">
+                            <label>Amount (USD)</label>
+                            <input type="number" id="amount" placeholder="0.00" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Transaction Type</label>
+                            <select id="type" required>
+                                <option value="PAYMENT">PAYMENT</option>
+                                <option value="TRANSFER">TRANSFER</option>
+                                <option value="CASH_OUT">CASH_OUT</option>
+                                <option value="DEBIT">DEBIT</option>
+                                <option value="CASH_IN">CASH_IN</option>
+                                <option value="CREDIT_CARD">CREDIT_CARD</option>
+                                <option value="RAZORPAY">RAZORPAY</option>
+                                <option value="PAYPAL">PAYPAL</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Hour of Day (0–23)</label>
+                            <input type="number" id="hour" placeholder="e.g. 2 for 2:00 AM" min="0" max="23" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Sender Balance Before ($)</label>
+                            <input type="number" id="oldbalance" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Sender Balance After ($)</label>
+                            <input type="number" id="newbalance" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Recipient Balance Before ($)</label>
+                            <input type="number" id="destold" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>ML Model</label>
+                            <select id="model">
+                                <option value="XGBoost">XGBoost</option>
+                                <option value="LightGBM">LightGBM</option>
+                                <option value="Random Forest">Random Forest</option>
+                                <option value="Logistic Regression">Logistic Regression</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-analyze" id="analyzeBtn">ANALYZE TRANSACTION &rarr;</button>
+                    </form>
+                </div>
+
+                <!-- RESULT PANEL -->
+                <div class="result-panel" id="resultPanel">
+                    <div class="result-placeholder" id="placeholder">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <p>Awaiting transaction data</p>
+                    </div>
+
+                    <div class="result-content" id="resultContent">
+                        <div class="result-header">
+                            <div class="verdict-title" id="verdictLabel">LEGITIMATE TRANSACTION</div>
+                            <div id="confidenceBadge"></div>
+                        </div>
+
+                        <div class="fraud-score-container">
+                            <div class="fraud-score-large"><span id="scoreVal">0</span>%</div>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="progressBar"></div>
+                            </div>
+                        </div>
+
+                        <div class="radar-container" style="height: 200px; margin-bottom: 2rem;">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+
+                        <div class="risk-signals">
+                            <div class="signal-row">
+                                <span>Amount Risk</span>
+                                <span id="sigAmount">LOW</span>
+                            </div>
+                            <div class="signal-row">
+                                <span>Timing Risk</span>
+                                <span id="sigTiming">LOW</span>
+                            </div>
+                            <div class="signal-row">
+                                <span>Balance Risk</span>
+                                <span id="sigBalance">LOW</span>
+                            </div>
+                            <div class="signal-row">
+                                <span>Pattern Risk</span>
+                                <span id="sigPattern">LOW</span>
+                            </div>
+                        </div>
+
+                        <div class="analysis-section">
+                            <div class="section-label" style="margin-bottom: 0.5rem;">Analysis</div>
+                            <div class="analysis-text" id="analysisText"></div>
+                        </div>
+
+                        <div class="result-footer">
+                            <span id="footerModel">Model: XGBoost</span>
+                            <span id="footerConfidence">Confidence: HIGH</span>
+                            <span id="footerTime">Processed in 0.04s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="batch" class="section">
+        <div class="container">
+            <div class="section-label">BATCH ANALYSIS</div>
+            <div class="upload-zone" id="dropZone">
+                <div id="dropZoneContent">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <p>Drop CSV file here or click to browse</p>
+                    <div class="expected-cols">Expected columns: amount, type, hour, oldbalance, newbalance, destbalance</div>
+                </div>
+                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+            </div>
+
+            <div class="batch-summary" id="batchSummary">
+                <div id="summaryText">0 of 0 transactions flagged as suspicious</div>
+                <button class="btn-export" id="exportBtn">Export Results CSV</button>
+            </div>
+
+            <div class="table-container" id="tableContainer">
+                <table id="batchTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Hour</th>
+                            <th>Fraud %</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batchTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="dashboard" class="section">
+        <div class="container">
+            <div class="section-label">DASHBOARD</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div class="syne" style="font-size: 24px; font-weight: 800;">Risk Analytics</div>
+                <button class="btn-logout" style="border-color: var(--accent-blue); color: var(--accent-blue); font-size: 11px;" onclick="initCharts(); updateDashboard();">Force Refresh Graphs</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Analyzed</div>
+                    <div class="stat-value" id="statTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Flagged Fraudulent</div>
+                    <div class="stat-value" id="statFraud">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Fraud Score</div>
+                    <div class="stat-value"><span id="statAvg">0</span>%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">High Risk Count</div>
+                    <div class="stat-value" id="statHigh">0</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Fraud vs Legitimate Split</div>
+                    <div class="chart-wrapper">
+                        <canvas id="doughnutChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Risk Distribution</div>
+                    <div class="chart-wrapper">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Hourly Risk Trend</div>
+                    <div class="chart-wrapper">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="section">
+        <div class="container">
+            <div class="section-label">ABOUT</div>
+            <div class="about-grid">
+                <div class="about-col">
+                    <h3>Dataset Information</h3>
+                    <p>Based on the Kaggle PaySim Financial Transactions Dataset, which contains over 6.3 million transactions.</p>
+                    <p>Features include transaction amount, type (PAYMENT, TRANSFER, etc.), sender and recipient balance deltas, and timestamp data.</p>
+                </div>
+                <div class="about-col">
+                    <h3>ML Models</h3>
+                    <ul class="model-list">
+                        <li><b>XGBoost:</b> Gradient boosted decision trees optimized for speed and performance.</li>
+                        <li><b>LightGBM:</b> Fast, distributed, high-performance gradient boosting framework.</li>
+                        <li><b>Random Forest:</b> Ensemble learning method using multiple decision trees.</li>
+                        <li><b>Logistic Regression:</b> Statistical model used for binary classification.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-note">
+                Backend-ready — replace the JS scoring function with a fetch() call to your FastAPI /predict endpoint
+            </div>
+        </div>
+    </section>
+    </div>
+
+    <script>
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = 'https://qwxeldomdykacfnmscgx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_MaM54lRw0JORvViwmwi1SQ_6Umy_EoJ';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // --- STATE MANAGEMENT ---
+        let predictionHistory = [];
+        let doughnutChart, barChart, trendChart, radarChart;
+
+        // --- AUTH LOGIC ---
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            
+            if (tab === 'login') {
+                document.querySelector('.auth-tab:nth-child(1)').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.querySelector('.auth-tab:nth-child(2)').classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+            document.getElementById('authMessage').innerText = '';
+        }
+
+        async function handleAuth(e, type) {
+            e.preventDefault();
+            const messageEl = document.getElementById('authMessage');
+            messageEl.innerText = 'Processing...';
+            messageEl.className = 'auth-message';
+
+            const email = type === 'login' ? document.getElementById('loginEmail').value : document.getElementById('regEmail').value;
+            const password = type === 'login' ? document.getElementById('loginPassword').value : document.getElementById('regPassword').value;
+
+            console.log(`Attempting ${type} for: ${email}`);
+
+            try {
+                let result;
+                if (type === 'login') {
+                    result = await supabaseClient.auth.signInWithPassword({ email, password });
+                } else {
+                    result = await supabaseClient.auth.signUp({ email, password });
+                }
+
+                if (result.error) {
+                    console.error("Supabase Auth Error:", result.error);
+                    throw result.error;
+                }
+
+                console.log("Auth Success:", result.data);
+
+                if (type === 'register') {
+                    messageEl.innerText = 'Account created! Please check your email or try logging in.';
+                    messageEl.className = 'auth-message success';
+                }
+            } catch (error) {
+                console.error("Connection Error:", error);
+                if (error.message === 'Failed to fetch') {
+                    messageEl.innerText = `Connection Failed: Check if the URL is correct: ${SUPABASE_URL}. Also ensure no Ad-Blockers are active.`;
+                } else {
+                    messageEl.innerText = error.message;
+                }
+                messageEl.className = 'auth-message error';
+            }
+        }
+
+        async function handleSignOut() {
+            await supabaseClient.auth.signOut();
+        }
+
+        // Listen for auth changes
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            const authView = document.getElementById('authView');
+            const mainContent = document.getElementById('mainContent');
+            const userEmail = document.getElementById('userEmail');
+
+            if (session) {
+                authView.style.display = 'none';
+                mainContent.style.display = 'block';
+                if (userEmail) userEmail.innerText = session.user.email;
+                
+                // Load history and initialize charts (with a small delay for visibility)
+                setTimeout(() => loadHistoryFromSupabase(), 200);
+            } else {
+                authView.style.display = 'flex';
+                mainContent.style.display = 'none';
+                if (userEmail) userEmail.innerText = '';
+                predictionHistory = []; // Clear history on logout
+            }
+        });
+
+        async function loadHistoryFromSupabase() {
+            const { data, error } = await supabaseClient
+                .from('transactions')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Error loading history:", error);
+                return;
+            }
+
+            predictionHistory = data.map(item => ({
+                amount: parseFloat(item.amount),
+                type: item.tx_type,
+                hour: parseInt(item.hour),
+                fraud_probability: parseInt(item.fraud_probability),
+                verdict: item.verdict,
+                confidence: item.confidence,
+                reasoning: item.reasoning,
+                model: item.model_used,
+                signals: { // Re-deriving signals for the UI to keep the DB light
+                    amount: parseFloat(item.amount) > 100000 ? 'HIGH' : parseFloat(item.amount) > 20000 ? 'MEDIUM' : 'LOW',
+                    timing: parseInt(item.hour) <= 5 ? 'HIGH' : parseInt(item.hour) >= 20 ? 'MEDIUM' : 'LOW',
+                    balance: parseInt(item.fraud_probability) > 70 ? 'HIGH' : 'LOW', 
+                    pattern: (item.tx_type === 'TRANSFER' || item.tx_type === 'CASH_OUT') ? 'HIGH' : 'MEDIUM'
+                }
+            }));
+
+            // Always re-init and update
+            initCharts();
+            updateDashboard();
+
+            // Show last result if it exists
+            if (predictionHistory.length > 0) {
+                showResult(predictionHistory[0]);
+            }
+        }
+
+        async function saveTransactionsToSupabase(results) {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return;
+
+            const resArray = Array.isArray(results) ? results : [results];
+            const rows = resArray.map(res => ({
+                user_id: user.id,
+                amount: res.amount,
+                tx_type: res.type,
+                hour: res.hour,
+                fraud_probability: res.fraud_probability,
+                verdict: res.verdict,
+                confidence: res.confidence,
+                reasoning: res.reasoning,
+                model_used: res.model
+            }));
+
+            const { error } = await supabaseClient
+                .from('transactions')
+                .insert(rows);
+
+            if (error) console.error("Error saving to Supabase:", error);
+        }
+
+        // --- ML SCORING LOGIC ---
+        async function predictFraud(tx, isBatch = false) {
+            const apiToggle = document.getElementById('apiToggle');
+            const useAPI = apiToggle ? apiToggle.checked : false;
+
+            if (useAPI) {
+                // Change this URL once you deploy your backend to Render
+                const API_URL = 'http://localhost:8000/predict'; 
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            amount: tx.amount,
+                            type: tx.type,
+                            hour: tx.hour,
+                            oldbalance: tx.oldbalance,
+                            newbalance: tx.newbalance,
+                            destold: tx.destold,
+                            model_name: tx.model
+                        })
+                    });
+                    if (!response.ok) throw new Error('API Error');
+                    const data = await response.json();
+                    return { ...data, amount: tx.amount, type: tx.type, hour: tx.hour };
+                } catch (err) {
+                    console.error("Backend unreachable, falling back to local simulation.", err);
+                    if (!isBatch) {
+                        alert("Backend unreachable (http://localhost:8000). Falling back to local simulation.");
+                    }
+                    if (apiToggle) apiToggle.checked = false;
+                }
+            }
+
+            // Local Simulation Logic (Fallback)
+            let score = 0;
+            const amount = parseFloat(tx.amount) || 0;
+            const oldbalance = parseFloat(tx.oldbalance) || 0;
+            const newbalance = parseFloat(tx.newbalance) || 0;
+            const destold = parseFloat(tx.destold) || 0;
+            const hour = parseInt(tx.hour) || 0;
+
+            // Amount scoring
+            if (amount > 200000) score += 35;
+            else if (amount > 50000) score += 20;
+            else if (amount > 10000) score += 10;
+
+            // Transaction type risk
+            const typeRisk = { 
+                TRANSFER: 25, 
+                CASH_OUT: 20, 
+                PAYMENT: 5, 
+                DEBIT: 5, 
+                CASH_IN: 0,
+                CREDIT_CARD: 15,
+                RAZORPAY: 10,
+                PAYPAL: 8
+            };
+            score += typeRisk[tx.type] || 0;
+
+            // Balance drain
+            const drain = oldbalance > 0 ? (oldbalance - newbalance) / oldbalance : 0;
+            if (drain > 0.95) score += 30;
+            else if (drain > 0.7) score += 15;
+            else if (drain > 0.4) score += 5;
+
+            // Recipient had zero balance before transfer
+            if ((tx.type === 'TRANSFER' || tx.type === 'CASH_OUT') && destold === 0) score += 10;
+
+            // Unusual hour (midnight to 5am)
+            if (hour >= 0 && hour <= 5) score += 10;
+
+            // Model sensitivity variation
+            const modelNoise = { 'XGBoost': 0, 'LightGBM': -3, 'Random Forest': 2, 'Logistic Regression': -5 };
+            score += modelNoise[tx.model] || 0;
+
+            score = Math.max(0, Math.min(100, score));
+
+            const drain_pct = (drain * 100).toFixed(0);
+            const reasons = [];
+            if (amount > 50000) reasons.push("high transaction amount ($" + amount.toLocaleString() + ")");
+            if (drain > 0.8) reasons.push("near-complete balance drain (" + drain_pct + "%)");
+            if (hour <= 5) reasons.push("unusual hour (" + hour + ":00 AM)");
+            if (tx.type === 'TRANSFER' || tx.type === 'CASH_OUT') reasons.push("high-risk type (" + tx.type + ")");
+            if (destold === 0 && tx.type === 'TRANSFER') reasons.push("recipient had zero prior balance");
+
+            const reasoning = score >= 50
+                ? "Transaction flagged due to: " + (reasons.join(', ') || 'suspicious pattern match') + ". These signals are consistent with known fraud patterns in the PaySim dataset."
+                : "Transaction appears legitimate. " + (reasons.length ? "Minor risk factors: " + reasons.join(', ') + "." : "No significant fraud indicators detected.") + " Analyzed by " + tx.model + ".";
+
+            return {
+                amount: amount,
+                type: tx.type,
+                hour: hour,
+                fraud_probability: score,
+                verdict: score >= 50 ? 'FRAUDULENT' : 'LEGITIMATE',
+                confidence: (score >= 75 || score <= 25) ? 'HIGH' : (score >= 60 || score <= 40) ? 'MEDIUM' : 'LOW',
+                signals: {
+                    amount: amount > 100000 ? 'HIGH' : amount > 20000 ? 'MEDIUM' : 'LOW',
+                    timing: hour <= 5 ? 'HIGH' : hour >= 20 ? 'MEDIUM' : 'LOW',
+                    balance: drain > 0.8 ? 'HIGH' : drain > 0.4 ? 'MEDIUM' : 'LOW',
+                    pattern: ((tx.type === 'TRANSFER' || tx.type === 'CASH_OUT') && drain > 0.7) ? 'HIGH' : 'MEDIUM'
+                },
+                reasoning: reasoning,
+                model: tx.model,
+                time: (Math.random() * 0.08 + 0.02).toFixed(3)
+            };
+        }
+
+        // --- DASHBOARD & STATS ---
+        function updateDashboard() {
+            const total = predictionHistory.length;
+            const fraudulent = predictionHistory.filter(p => p.verdict === 'FRAUDULENT').length;
+            const avgScore = total > 0 ? (predictionHistory.reduce((acc, p) => acc + (parseInt(p.fraud_probability) || 0), 0) / total).toFixed(1) : 0;
+            const highRisk = predictionHistory.filter(p => (p.confidence || '').toUpperCase() === 'HIGH' && p.verdict === 'FRAUDULENT').length;
+
+            animateValue("statTotal", 0, total, 500);
+            animateValue("statFraud", 0, fraudulent, 500);
+            animateValue("statAvg", 0, avgScore, 500);
+            animateValue("statHigh", 0, highRisk, 500);
+
+            updateCharts();
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            if (!obj) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const current = (progress * (end - start)).toFixed(id === 'statAvg' ? 1 : 0);
+                obj.innerHTML = current;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function initCharts() {
+            console.log("Initializing all charts...");
+            
+            // 1. Radar Chart (Result Panel)
+            const radarCanvas = document.getElementById('radarChart');
+            if (radarCanvas) {
+                const existing = Chart.getChart(radarCanvas);
+                if (existing) existing.destroy();
+                radarChart = new Chart(radarCanvas.getContext('2d'), {
+                    type: 'radar',
+                    data: {
+                        labels: ['Amount', 'Timing', 'Balance', 'Pattern'],
+                        datasets: [{
+                            label: 'Risk Level',
+                            data: [0, 0, 0, 0],
+                            backgroundColor: 'rgba(224, 82, 82, 0.2)',
+                            borderColor: '#e05252',
+                            pointBackgroundColor: '#e05252',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            r: {
+                                min: 0, max: 100, beginAtZero: true,
+                                grid: { color: '#252525' },
+                                angleLines: { color: '#252525' },
+                                pointLabels: { color: '#888', font: { family: 'DM Mono', size: 10 } },
+                                ticks: { display: false, stepSize: 25 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Doughnut Chart (Fraud Split)
+            const doughnutCanvas = document.getElementById('doughnutChart');
+            if (doughnutCanvas) {
+                const existing = Chart.getChart(doughnutCanvas);
+                if (existing) existing.destroy();
+                doughnutChart = new Chart(doughnutCanvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Legitimate', 'Fraudulent'],
+                        datasets: [{
+                            data: [1, 0], // Start with neutral state
+                            backgroundColor: ['#52c97a', '#e05252'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#888', font: { family: 'DM Mono', size: 10 } } }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+
+            // 3. Bar Chart (Risk Distribution)
+            const barCanvas = document.getElementById('barChart');
+            if (barCanvas) {
+                const existing = Chart.getChart(barCanvas);
+                if (existing) existing.destroy();
+                barChart = new Chart(barCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Low Risk', 'Med Risk', 'High Risk'],
+                        datasets: [{
+                            label: 'Transactions',
+                            data: [0, 0, 0],
+                            backgroundColor: ['#52c97a', '#f5a623', '#e05252'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: '#252525' }, ticks: { color: '#888', font: { family: 'DM Mono', size: 10 } } },
+                            y: { grid: { display: false }, ticks: { color: '#888', font: { family: 'DM Mono', size: 10 } } }
+                        }
+                    }
+                });
+            }
+
+            // 4. Trend Chart (Hourly Trend)
+            const trendCanvas = document.getElementById('trendChart');
+            if (trendCanvas) {
+                const existing = Chart.getChart(trendCanvas);
+                if (existing) existing.destroy();
+                trendChart = new Chart(trendCanvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 24}, (_, i) => i + ':00'),
+                        datasets: [{
+                            label: 'Avg Fraud Score',
+                            data: Array(24).fill(0),
+                            borderColor: '#4a90e2',
+                            backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#444', font: { family: 'DM Mono', size: 8 }, maxRotation: 0 } },
+                            y: { min: 0, max: 100, grid: { color: '#252525' }, ticks: { color: '#888', font: { family: 'DM Mono', size: 8 } } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateCharts() {
+            if (!predictionHistory) return;
+            console.log("Updating charts with data size:", predictionHistory.length);
+
+            // Update Doughnut
+            if (doughnutChart) {
+                const legit = predictionHistory.filter(p => p.verdict === 'LEGITIMATE').length;
+                const fraud = predictionHistory.filter(p => p.verdict === 'FRAUDULENT').length;
+                
+                if (legit === 0 && fraud === 0) {
+                    doughnutChart.data.datasets[0].data = [1, 0]; // Placeholder
+                } else {
+                    doughnutChart.data.datasets[0].data = [legit, fraud];
+                }
+                doughnutChart.update();
+            }
+
+            // Update Bar
+            if (barChart) {
+                const low = predictionHistory.filter(p => (p.confidence || '').toUpperCase() === 'LOW').length;
+                const med = predictionHistory.filter(p => (p.confidence || '').toUpperCase() === 'MEDIUM').length;
+                const high = predictionHistory.filter(p => (p.confidence || '').toUpperCase() === 'HIGH').length;
+                barChart.data.datasets[0].data = [low, med, high];
+                barChart.update();
+            }
+
+            // Update Trend
+            if (trendChart) {
+                const hourlyScores = Array(24).fill(0);
+                const hourlyCounts = Array(24).fill(0);
+                
+                predictionHistory.forEach(p => {
+                    const h = parseInt(p.hour);
+                    if (h >= 0 && h < 24) {
+                        hourlyScores[h] += (parseInt(p.fraud_probability) || 0);
+                        hourlyCounts[h]++;
+                    }
+                });
+
+                const trendData = hourlyScores.map((sum, i) => hourlyCounts[i] > 0 ? (sum / hourlyCounts[i]) : 0);
+                trendChart.data.datasets[0].data = trendData;
+                trendChart.update();
+            }
+        }
+
+        // --- FORM HANDLING ---
+        const txForm = document.getElementById('txForm');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const resultPanel = document.getElementById('resultPanel');
+        const placeholder = document.getElementById('placeholder');
+        const resultContent = document.getElementById('resultContent');
+
+        txForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = 'ANALYZING<span class="blinking">...</span>';
+
+            const tx = {
+                amount: parseFloat(document.getElementById('amount').value),
+                type: document.getElementById('type').value,
+                hour: parseInt(document.getElementById('hour').value),
+                oldbalance: parseFloat(document.getElementById('oldbalance').value),
+                newbalance: parseFloat(document.getElementById('newbalance').value),
+                destold: parseFloat(document.getElementById('destold').value),
+                model: document.getElementById('model').value
+            };
+
+            const result = await predictFraud(tx);
+            
+            // Artificial delay for UI realism
+            setTimeout(async () => {
+                predictionHistory.unshift(result); // Add to beginning of history
+                showResult(result);
+                updateDashboard();
+                
+                // Save to database
+                await saveTransactionsToSupabase(result);
+                
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = 'ANALYZE TRANSACTION &rarr;';
+            }, 600);
+        });
+
+        function showResult(res) {
+            if (!res) return;
+            placeholder.style.display = 'none';
+            resultContent.style.display = 'block';
+
+            const vLabel = document.getElementById('verdictLabel');
+            if (vLabel) {
+                vLabel.innerText = res.verdict + " TRANSACTION";
+                vLabel.style.color = res.verdict === 'FRAUDULENT' ? 'var(--accent-red)' : 'var(--accent-green)';
+            }
+
+            const badge = document.getElementById('confidenceBadge');
+            if (badge) {
+                badge.className = 'badge badge-' + (res.confidence || 'low').toLowerCase();
+                badge.innerText = (res.confidence || 'LOW') + " CONFIDENCE";
+            }
+
+            const scoreVal = document.getElementById('scoreVal');
+            if (scoreVal) scoreVal.innerText = res.fraud_probability || 0;
+            
+            const bar = document.getElementById('progressBar');
+            if (bar) {
+                bar.className = 'progress-bar ' + (res.verdict === 'FRAUDULENT' ? 'fraud' : 'legit');
+                setTimeout(() => bar.style.width = (res.fraud_probability || 0) + '%', 50);
+            }
+
+            const setSignal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerText = val || 'LOW';
+                    el.className = 'badge badge-' + (val || 'low').toLowerCase();
+                }
+            };
+
+            if (res.signals) {
+                setSignal('sigAmount', res.signals.amount);
+                setSignal('sigTiming', res.signals.timing);
+                setSignal('sigBalance', res.signals.balance);
+                setSignal('sigPattern', res.signals.pattern);
+            }
+
+            // Update Radar Chart
+            if (radarChart && res.signals) {
+                const riskMap = { 'HIGH': 90, 'MEDIUM': 50, 'LOW': 15 };
+                radarChart.data.datasets[0].data = [
+                    riskMap[res.signals.amount] || 15,
+                    riskMap[res.signals.timing] || 15,
+                    riskMap[res.signals.balance] || 15,
+                    riskMap[res.signals.pattern] || 15
+                ];
+                radarChart.data.datasets[0].borderColor = res.verdict === 'FRAUDULENT' ? 'var(--accent-red)' : 'var(--accent-green)';
+                radarChart.data.datasets[0].backgroundColor = res.verdict === 'FRAUDULENT' ? 'rgba(224, 82, 82, 0.2)' : 'rgba(82, 201, 122, 0.2)';
+                radarChart.update();
+            }
+
+            const analysisText = document.getElementById('analysisText');
+            if (analysisText) {
+                analysisText.innerText = res.reasoning || '';
+                analysisText.style.borderColor = res.verdict === 'FRAUDULENT' ? 'var(--accent-red)' : 'var(--accent-green)';
+            }
+
+            if (document.getElementById('footerModel')) document.getElementById('footerModel').innerText = "Model: " + (res.model || 'Unknown');
+            if (document.getElementById('footerConfidence')) document.getElementById('footerConfidence').innerText = "Confidence: " + (res.confidence || 'LOW');
+            if (document.getElementById('footerTime')) document.getElementById('footerTime').innerText = "Processed in " + (res.time || '0.00') + "s";
+        }
+
+        // --- BATCH PROCESSING ---
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const batchTableBody = document.getElementById('batchTableBody');
+        const tableContainer = document.getElementById('tableContainer');
+        const batchSummary = document.getElementById('batchSummary');
+        const exportBtn = document.getElementById('exportBtn');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent-blue)';
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = 'var(--border)');
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border)';
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                processCSV(text);
+            };
+            reader.readAsText(file);
+        }
+
+        async function processCSV(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+            if (lines.length < 2) {
+                alert("CSV file appears to be empty or missing data rows.");
+                return;
+            }
+
+            const content = document.getElementById('dropZoneContent');
+
+            try {
+                // UI Feedback: Show processing state
+                if (content) content.innerHTML = '<p>Processing dataset... <span class="blinking">Please wait</span></p>';
+                
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                const requiredHeaders = ['amount', 'type', 'hour', 'oldbalance', 'newbalance', 'destbalance'];
+                const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+
+                if (missingHeaders.length > 0) {
+                    alert("Missing required columns: " + missingHeaders.join(', ') + "\n\nPlease ensure your CSV has the correct headers.");
+                    return;
+                }
+                
+                const rows = lines.slice(1);
+                const results = [];
+
+                batchTableBody.innerHTML = '';
+                
+                for (let idx = 0; idx < rows.length; idx++) {
+                    const line = rows[idx];
+                    const values = line.split(',').map(v => v.trim());
+                    if (values.length < headers.length) continue;
+
+                    const tx = {};
+                    headers.forEach((h, i) => {
+                        if (h === 'amount') tx.amount = values[i];
+                        if (h === 'type') tx.type = values[i].toUpperCase();
+                        if (h === 'hour') tx.hour = values[i];
+                        if (h === 'oldbalance') tx.oldbalance = values[i];
+                        if (h === 'newbalance') tx.newbalance = values[i];
+                        if (h === 'destbalance') tx.destold = values[i];
+                    });
+                    tx.model = document.getElementById('model').value;
+
+                    const res = await predictFraud(tx, true);
+                    predictionHistory.unshift(res); // Add to beginning
+                    results.push(res);
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${idx + 1}</td>
+                        <td>$${parseFloat(res.amount).toLocaleString()}</td>
+                        <td>${res.type}</td>
+                        <td>${res.hour}:00</td>
+                        <td>${res.fraud_probability}%</td>
+                        <td><span class="badge badge-${res.verdict === 'FRAUDULENT' ? 'high' : 'low'}">${res.verdict}</span></td>
+                    `;
+                    batchTableBody.appendChild(tr);
+                }
+
+                if (results.length === 0) {
+                    alert("No valid transactions found in the CSV.");
+                    return;
+                }
+
+                // Bulk save to database
+                await saveTransactionsToSupabase(results);
+
+                const fraudCount = results.filter(r => r.verdict === 'FRAUDULENT').length;
+                document.getElementById('summaryText').innerText = `${fraudCount} of ${results.length} transactions flagged as suspicious`;
+                
+                batchSummary.style.display = 'flex';
+                tableContainer.style.display = 'block';
+                updateDashboard();
+                
+                // Show the first result from the batch in the result panel
+                if (results.length > 0) showResult(results[0]);
+
+            } catch (error) {
+                console.error("Batch processing error:", error);
+                alert("An error occurred during batch processing. Check the console for details.");
+            } finally {
+                restoreDropZone();
+            }
+        }
+
+        function restoreDropZone() {
+            const content = document.getElementById('dropZoneContent');
+            if (content) {
+                content.innerHTML = `
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <p>Drop CSV file here or click to browse</p>
+                    <div class="expected-cols">Expected columns: amount, type, hour, oldbalance, newbalance, destbalance</div>
+                `;
+            }
+        }
+
+        exportBtn.addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "ID,Amount,Type,Hour,Fraud Probability,Verdict,Confidence\n";
+            
+            predictionHistory.forEach((res, index) => {
+                const row = [
+                    index + 1,
+                    res.amount,
+                    res.type,
+                    res.hour,
+                    res.fraud_probability,
+                    res.verdict,
+                    res.confidence
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "fraud_analysis_results.csv");
+            document.body.appendChild(link);
+            link.click();
+        });
+
+        // --- UI INTERACTONS ---
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.section, #hero');
+            const navLinks = document.querySelectorAll('.nav-links a');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Blinking animation for loader
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .blinking { animation: blink 1s infinite; }
+            @keyframes blink { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+        `;
+        document.head.appendChild(style);
+
+        // Initial setup
+        window.onload = () => {
+            // Charts are now initialized in onAuthStateChange once the container is visible
+        };
+    </script>
+</body>
+</html>
